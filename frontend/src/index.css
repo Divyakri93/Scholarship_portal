@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-primary-50: #eff6ff;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+
+/* Base Styles */
+body {
+  @apply font-sans antialiased text-gray-900 bg-gray-50;
+  /* Fallback to bg-gray-50 if bg-background fails, but with @theme it should work */
+  background-color: var(--color-background);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-heading tracking-tight;
+}
+
+/* Components */
+.btn {
+  @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-sm shadow-blue-200;
+}
+
+.btn-secondary {
+  @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-200;
+}
+
+.btn-ghost {
+  @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900;
+}
+
+.card {
+  @apply bg-white rounded-xl border border-gray-100 shadow-sm transition-shadow duration-200;
+}
+
+.card:hover {
+  @apply shadow-md;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
