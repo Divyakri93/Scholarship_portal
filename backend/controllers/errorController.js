@@ -6,8 +6,18 @@ const handleCastErrorDB = err => {
 };
 
 const handleDuplicateFieldsDB = err => {
-    const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
-    const message = `Duplicate field value: ${value}. Please use another value!`;
+    let message;
+    if (err.keyValue) {
+        const field = Object.keys(err.keyValue)[0];
+        const value = err.keyValue[field];
+        message = `Duplicate field value for ${field}: ${value}. Please use another value!`;
+    } else if (err.errmsg) {
+        const match = err.errmsg.match(/(["'])(\\?.)*?\1/);
+        const value = match ? match[0] : 'Unknown';
+        message = `Duplicate field value: ${value}. Please use another value!`;
+    } else {
+        message = 'Duplicate field value. Please use another value!';
+    }
     return new AppError(message, 400);
 };
 
@@ -61,6 +71,7 @@ module.exports = (err, req, res, next) => {
         let error = { ...err };
         error.message = err.message;
         error.name = err.name;
+        // error.code IS usually enumerable, but we can copy it explicitly if needed, but spread handles it usually for Mongo errors.
 
         if (error.name === 'CastError') error = handleCastErrorDB(error);
         if (error.code === 11000) error = handleDuplicateFieldsDB(error);
