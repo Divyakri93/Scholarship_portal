@@ -24,17 +24,16 @@ exports.getAllScholarships = catchAsync(async (req, res, next) => {
     const features = new APIFeatures(Scholarship.find(), req.query)
         .filter()
         .sort()
-        .limitFields()
-        .paginate();
+        .limitFields();
 
+    // Get total count of documents matching the filter (before pagination)
+    // We purposefully do this before .paginate() execution if possible, 
+    // but .paginate() is chainable. 
+    // Mongoose Query.getFilter() gives us the filter object.
+    const total = await Scholarship.countDocuments(features.query.getFilter());
+
+    features.paginate();
     const scholarships = await features.query;
-
-    // Total count for pagination
-    // Note: This countDocuments doesn't account for filters in APIFeatures (which is complex to extract).
-    // For simple pagination, we usually do a separate count query or ignore exact total if filtering.
-    // Let's keep it simple: Scholarship.countDocuments() counts all. 
-    // If strict match needed, we would need: Scholarship.countDocuments(features.query.getFilter())
-    const total = await Scholarship.countDocuments(); // Simplification
 
     res.status(200).json({
         status: 'success',

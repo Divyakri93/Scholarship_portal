@@ -43,12 +43,16 @@ function App() {
         <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
+              {/* Public Routes with Navbar */}
+              <Route element={<Layout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/scholarships" element={<ScholarshipList />} />
+                <Route path="/scholarships/:id" element={<ScholarshipDetail />} />
+              </Route>
+
+              {/* Auth Routes (No Navbar) */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/scholarships" element={<ScholarshipList />} />
-              <Route path="/scholarships/:id" element={<ScholarshipDetail />} />
               <Route path="/unauthorized" element={<Unauthorized />} />
 
               {/* Protected Routes (Student & Provider) */}
@@ -64,11 +68,12 @@ function App() {
                 </Route>
               </Route>
 
-              {/* Admin Routes */}
-              <Route element={<ProtectedRoute role="admin" />}>
+              {/* Admin & Provider Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'provider']} />}>
                 <Route element={<Layout />}>
                   <Route path="/admin/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
                   <Route path="/admin/scholarships/new" element={<ErrorBoundary><CreateScholarship /></ErrorBoundary>} />
+                  <Route path="/admin/scholarships" element={<ErrorBoundary><ScholarshipList adminView={true} /></ErrorBoundary>} />
                   <Route path="/admin/applications/:id" element={<ErrorBoundary><AdminApplicationReview /></ErrorBoundary>} />
                 </Route>
               </Route>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell
@@ -10,8 +11,10 @@ import {
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
+import adminHero from '../assets/admin_analytics_hero.png';
 
 const AdminDashboard = () => {
+    const { user } = useAuth();
     const [stats, setStats] = useState({
         totalApps: 0, pendingApps: 0, approvedApps: 0, totalScholarships: 0
     });
@@ -20,16 +23,22 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchAdminData();
-    }, []);
+        if (user) {
+            fetchAdminData();
+        }
+    }, [user]);
 
     const fetchAdminData = async () => {
         try {
-            // In a real app, these would probably be separate specific admin endpoints
-            // For now, we reuse existing or assume admin access to 'getAll' style routes
+            // Determine scholarships endpoint
+            let scholEndpoint = '/scholarships?sort=-createdAt&limit=5';
+            if (user.role === 'provider') {
+                scholEndpoint += `&provider=${user._id}`;
+            }
+
             const [appsRes, scholRes] = await Promise.all([
-                api.get('/applications/admin/all'), // Needs backend implementation or use existing if role protected
-                api.get('/scholarships?sort=-createdAt&limit=5')
+                api.get('/applications/admin/all'),
+                api.get(scholEndpoint)
             ]);
 
             const apps = appsRes.data.data.applications;
@@ -52,8 +61,8 @@ const AdminDashboard = () => {
 
         } catch (err) {
             console.error(err);
-            // Fallback mock for demo if backend not fully ready for "Admin Analytics"
-            setStats({ totalApps: 120, pendingApps: 45, approvedApps: 30, totalScholarships: 12 });
+            toast.error('Failed to load dashboard data');
+            setStats({ totalApps: 0, pendingApps: 0, approvedApps: 0, totalScholarships: 0 });
             setRecentApps([]);
         } finally {
             setLoading(false);
@@ -80,53 +89,68 @@ const AdminDashboard = () => {
     if (loading) return <div className="flex h-screen items-center justify-center">Loading Admin Dashboard...</div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="min-h-screen bg-gray-50">
+            {/* Header / Hero */}
+            <div className="relative bg-slate-900 overflow-hidden shadow-lg">
+                <div className="absolute inset-0">
+                    <img src={adminHero} alt="Admin Background" className="w-full h-full object-cover opacity-20" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/90 to-transparent"></div>
+                </div>
 
-                <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Admin Overview</h1>
-                    <div className="flex gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 text-gray-700">
-                            <Download size={16} /> Export Report
-                        </button>
-                        <Link to="/admin/scholarships/new" className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow">
-                            <Plus size={16} /> New Scholarship
-                        </Link>
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Admin Overview</h1>
+                            <p className="mt-2 text-slate-300 text-lg max-w-2xl">
+                                Manage scholarships, applications, and system performance from a central command center.
+                            </p>
+                        </div>
+                        <div className="flex gap-4">
+                            <button className="flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-sm font-medium hover:bg-white/20 text-white transition">
+                                <Download size={18} /> Export Report
+                            </button>
+                            <Link to="/admin/scholarships/new" className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-blue-600 shadow-xl shadow-blue-900/20 transform hover:-translate-y-0.5 transition-all">
+                                <Plus size={18} /> New Scholarship
+                            </Link>
+                        </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10 pb-12 space-y-8">
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm text-gray-500 font-medium">Total Applications</p>
                                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.totalApps}</h3>
-                                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full mt-2 inline-block">+12% this week</span>
+                                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full mt-2 inline-block font-semibold">+12% this week</span>
                             </div>
-                            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg"><FileText size={20} /></div>
+                            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><FileText size={24} /></div>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm text-gray-500 font-medium">Pending Review</p>
                                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.pendingApps}</h3>
-                                <p className="text-xs text-gray-400 mt-1">Requires attention</p>
+                                <p className="text-xs text-orange-500 mt-1 font-medium">Requires attention</p>
                             </div>
-                            <div className="p-3 bg-yellow-50 text-yellow-600 rounded-lg"><ClockIcon /></div>
+                            <div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><ClockIcon /></div>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm text-gray-500 font-medium">Active Scholarships</p>
                                 <h3 className="text-3xl font-bold text-gray-900 mt-2">{stats.totalScholarships}</h3>
                             </div>
-                            <div className="p-3 bg-purple-50 text-purple-600 rounded-lg"><CheckCircle size={20} /></div>
+                            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl"><CheckCircle size={24} /></div>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start">
                             <div>
                                 <p className="text-sm text-gray-500 font-medium">Approval Rate</p>
@@ -134,7 +158,7 @@ const AdminDashboard = () => {
                                     {stats.totalApps > 0 ? ((stats.approvedApps / stats.totalApps) * 100).toFixed(1) : 0}%
                                 </h3>
                             </div>
-                            <div className="p-3 bg-green-50 text-green-600 rounded-lg"><Users size={20} /></div>
+                            <div className="p-3 bg-green-50 text-green-600 rounded-xl"><Users size={24} /></div>
                         </div>
                     </div>
                 </div>
